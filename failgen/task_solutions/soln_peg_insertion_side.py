@@ -1,7 +1,6 @@
 import numpy as np
 import sapien
 
-from mani_skill.envs.tasks import PegInsertionSideEnv
 from mani_skill.examples.motionplanning.panda.motionplanner import (
     PandaArmMotionPlanningSolver,
 )
@@ -10,10 +9,11 @@ from mani_skill.examples.motionplanning.panda.utils import (
     get_actor_obb,
 )
 
+from failgen.tasks.fail_peg_insertion_side import FailPegInsertionSideEnv
 from failgen.fail_planner_wrapper import FailPlannerWrapper
 
 
-def solve(env: PegInsertionSideEnv, seed=None, debug=False, vis=False):
+def solve(env: FailPegInsertionSideEnv, seed=None, debug=False, vis=False):
     env.reset(seed=seed)
     assert env.unwrapped.control_mode in [
         "pd_joint_pos",

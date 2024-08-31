@@ -9,7 +9,7 @@ def main() -> int:
         "-t",
         "--task-name",
         type=str,
-        default="PickCube-v1",
+        default="FailPickCube-v1",
         help="The id of the task to be created for this demo",
     )
     parser.add_argument(

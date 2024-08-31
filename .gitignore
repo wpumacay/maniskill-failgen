@@ -163,3 +163,5 @@ cython_debug/
 
 # Exclude ManiSkill repo
 repo/
+# Exclude demos folder
+demos/

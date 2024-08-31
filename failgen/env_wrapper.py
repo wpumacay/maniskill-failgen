@@ -8,22 +8,22 @@ from omegaconf import OmegaConf
 
 from mani_skill.utils.wrappers.record import RecordEpisode
 
-from failgen.task_solutions.peg_insertion_side import solve as solvePegInsertionSide
-from failgen.task_solutions.pick_cube import solve as solvePickCube
-from failgen.task_solutions.plug_charger import solve as solvePlugCharger
-from failgen.task_solutions.push_cube import solve as solvePushCube
-from failgen.task_solutions.stack_cube import solve as solveStackCube
+from failgen.task_solutions.soln_peg_insertion_side import solve as solvePegInsertionSide
+from failgen.task_solutions.soln_pick_cube import solve as solvePickCube
+from failgen.task_solutions.soln_plug_charger import solve as solvePlugCharger
+from failgen.task_solutions.soln_push_cube import solve as solvePushCube
+from failgen.task_solutions.soln_stack_cube import solve as solveStackCube
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIGS_DIR = os.path.join(CURRENT_DIR, "configs")
 
-DEFAULT_TASK = "PickCube-v1"
+DEFAULT_TASK = "FailPickCube-v1"
 MP_SOLUTIONS = {
-    "PegInsertionSide-v1": solvePegInsertionSide,
-    "PickCube-v1": solvePickCube,
-    "PlugCharger-v1": solvePlugCharger,
-    "PushCube-v1": solvePushCube,
-    "StackCube-v1": solveStackCube,
+    "FailPegInsertionSide-v1": solvePegInsertionSide,
+    "FailPickCube-v1": solvePickCube,
+    "FailPlugCharger-v1": solvePlugCharger,
+    "FailPushCube-v1": solvePushCube,
+    "FailStackCube-v1": solveStackCube,
 }
 
 
