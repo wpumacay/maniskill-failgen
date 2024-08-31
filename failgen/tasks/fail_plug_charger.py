@@ -14,11 +14,18 @@ class FailPlugChargerEnv(PlugChargerEnv):
 
     @property
     def _default_sensor_configs(self):
-        pose = sapien_utils.look_at(eye=[0.3, 0, 0.6], target=[-0.1, 0, 0.1])
+        pose_front = sapien_utils.look_at(
+            eye=[0.3, 0, 0.6], target=[-0.1, 0, 0.1]
+        )
+        pose_side = sapien_utils.look_at(
+            eye=[0, 0.6, 0.6], target=[-0.1, 0, 0.1]
+        )
+
         return [
-            CameraConfig("front_camera", pose, 128, 128, np.pi / 2, 0.01, 100),
-            CameraConfig("side_camera", pose, 128, 128, np.pi / 2, 0.01, 100),
+            CameraConfig(
+                "front_camera", pose_front, 128, 128, np.pi / 2, 0.01, 100
+            ),
+            CameraConfig(
+                "side_camera", pose_side, 128, 128, np.pi / 2, 0.01, 100
+            ),
         ]
-
-
-

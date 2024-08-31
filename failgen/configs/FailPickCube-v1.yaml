@@ -1,5 +1,5 @@
 save_path: /home/${oc.env:USER}/data/failgen_data
-obs_mode: none
-render_mode: rgb_array
+obs_mode: rgb
+render_mode: sensors
 shader: default
 sim_backend: auto
