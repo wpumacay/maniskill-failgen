@@ -24,7 +24,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--num-episodes",
-        type=str,
+        type=int,
         default=10,
         help="The number of episodes to run this demo"
     )

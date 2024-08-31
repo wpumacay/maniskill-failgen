@@ -37,10 +37,19 @@ class FailPlannerWrapper:
         if not self._fail_on_close:
             self._planner.close_gripper()
 
-    def move_to_pose_with_screw(self, target_pose: sapien.Pose):
+    def move_to_pose_with_screw(
+        self,
+        target_pose: sapien.Pose,
+        dry_run: bool = False,
+        refine_steps: int = 0,
+    ):
         if self._fail_on_move:
-            target_pose.p = target_pose.p + 0.01 * np.random.rand(*target_pose.p.shape)
-        return self._planner.move_to_pose_with_screw(target_pose)
+            target_pose.p = target_pose.p + 0.01 * np.random.rand(
+                *target_pose.p.shape
+            )
+        return self._planner.move_to_pose_with_screw(
+            target_pose, dry_run=dry_run, refine_steps=refine_steps
+        )
 
     def close(self) -> None:
         return self._planner.close()

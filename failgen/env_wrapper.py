@@ -33,6 +33,7 @@ class FailgenWrapper:
         self._headless = headless
         self._save_video = save_video
         self._solve_fn = MP_SOLUTIONS[task_name]
+        self._seed = 0
 
         self._config = OmegaConf.load(os.path.join(CONFIGS_DIR, f"{task_name}.yaml"))
 
@@ -59,11 +60,12 @@ class FailgenWrapper:
     def get_failure(self) -> bool:
         success = self._solve_fn(
             self._env,
-            seed=0,
+            seed=self._seed,
             debug=False,
             vis=not self._headless,
         )
 
+        self._seed += 1
         self._env.flush_trajectory()
         self._env.flush_video()
 
