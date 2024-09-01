@@ -3,3 +3,4 @@ obs_mode: rgb
 render_mode: sensors
 shader: default
 sim_backend: auto
+image_size: [256, 256]
