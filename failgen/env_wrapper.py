@@ -4,8 +4,9 @@ from typing import List, Tuple
 import gymnasium as gym
 import numpy as np
 
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 
+from failgen.fail_planner_wrapper import FailPlannerWrapper
 from failgen.task_solutions.soln_peg_insertion_side import (
     solve as solvePegInsertionSide,
 )
@@ -42,12 +43,14 @@ class FailgenWrapper:
             os.path.join(CONFIGS_DIR, f"{task_name}.yaml")
         )
 
+        self._fail_plan_wrapper = FailPlannerWrapper(self._config)  # type: ignore
+
         self._env = gym.make(
             task_name,
             obs_mode=self._config.obs_mode,
             control_mode="pd_joint_pos",
             render_mode=self._config.render_mode,
-            reward_mode="dense",
+            reward_mode="sparse",
             sensor_configs=dict(
                 width=self._config.image_size[0],
                 height=self._config.image_size[1],
@@ -71,16 +74,25 @@ class FailgenWrapper:
         )
 
     def get_failure(self) -> bool:
-        success = self._solve_fn(
+        result = self._solve_fn(
             self._env,
+            self._fail_plan_wrapper,
             seed=self._seed,
             debug=False,
             vis=not self._headless,
         )
-
         self._seed += 1
-        self._env.flush_trajectory()
-        self._env.flush_video()
-        self._env.flush_video_multi()
+        if result is None:
+            return True
+        return result[4]["success"]
 
-        return success
+    def save_video(self, save: bool = True) -> None:
+        self._env.flush_trajectory(save=False)
+        self._env.flush_video(
+            save=False, suffix=self._fail_plan_wrapper._active_fail.type
+        )
+        fail_type = self._fail_plan_wrapper._active_fail.type
+        fail_stage = self._fail_plan_wrapper._fail_stage
+        self._env.flush_video_multi(
+            save=save, suffix=f"{fail_type}_{fail_stage}"
+        )

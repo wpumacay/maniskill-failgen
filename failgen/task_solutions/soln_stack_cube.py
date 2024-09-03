@@ -2,15 +2,26 @@ import numpy as np
 import sapien
 from transforms3d.euler import euler2quat
 
-from mani_skill.examples.motionplanning.panda.motionplanner import \
-    PandaArmMotionPlanningSolver
+from mani_skill.examples.motionplanning.panda.motionplanner import (
+    PandaArmMotionPlanningSolver,
+)
 from mani_skill.examples.motionplanning.panda.utils import (
-    compute_grasp_info_by_obb, get_actor_obb)
+    compute_grasp_info_by_obb,
+    get_actor_obb,
+)
 
+from failgen.fail_planner_wrapper import FailPlannerWrapper
 from failgen.tasks.fail_stack_cube import FailStackCubeEnv
 from failgen.fail_planner_wrapper import FailPlannerWrapper
 
-def solve(env: FailStackCubeEnv, seed=None, debug=False, vis=False):
+
+def solve(
+    env: FailStackCubeEnv,
+    planner_wrapper: FailPlannerWrapper,
+    seed=None,
+    debug=False,
+    vis=False,
+):
     env.reset(seed=seed)
     assert env.unwrapped.control_mode in [
         "pd_joint_pos",
@@ -25,19 +36,16 @@ def solve(env: FailStackCubeEnv, seed=None, debug=False, vis=False):
         print_env_info=False,
     )
 
-    planner = FailPlannerWrapper(
-        planner,
-        fail_on_open=True,
-        fail_on_close=True,
-        fail_on_move=False,
-    )
+    planner_wrapper.wrap_planner(planner)
 
     FINGER_LENGTH = 0.025
     env = env.unwrapped
     obb = get_actor_obb(env.cubeA)
 
     approaching = np.array([0, 0, -1])
-    target_closing = env.agent.tcp.pose.to_transformation_matrix()[0, :3, 1].numpy()
+    target_closing = env.agent.tcp.pose.to_transformation_matrix()[
+        0, :3, 1
+    ].numpy()
     grasp_info = compute_grasp_info_by_obb(
         obb,
         approaching=approaching,
@@ -54,7 +62,9 @@ def solve(env: FailStackCubeEnv, seed=None, debug=False, vis=False):
     for angle in angles:
         delta_pose = sapien.Pose(q=euler2quat(0, 0, angle))
         grasp_pose2 = grasp_pose * delta_pose
-        res = planner.move_to_pose_with_screw(grasp_pose2, dry_run=True)
+        res = planner_wrapper.move_to_pose_with_screw(
+            grasp_pose2, dry_run=True, stage=0
+        )
         if res == -1:
             continue
         grasp_pose = grasp_pose2
@@ -66,28 +76,30 @@ def solve(env: FailStackCubeEnv, seed=None, debug=False, vis=False):
     # Reach
     # -------------------------------------------------------------------------- #
     reach_pose = grasp_pose * sapien.Pose([0, 0, -0.05])
-    planner.move_to_pose_with_screw(reach_pose)
+    planner_wrapper.move_to_pose_with_screw(reach_pose, stage=1)
 
     # -------------------------------------------------------------------------- #
     # Grasp
     # -------------------------------------------------------------------------- #
-    planner.move_to_pose_with_screw(grasp_pose)
-    planner.close_gripper()
+    planner_wrapper.move_to_pose_with_screw(grasp_pose, stage=2)
+    planner_wrapper.close_gripper(stage=3)
 
     # -------------------------------------------------------------------------- #
     # Lift
     # -------------------------------------------------------------------------- #
     lift_pose = sapien.Pose([0, 0, 0.1]) * grasp_pose
-    planner.move_to_pose_with_screw(lift_pose)
+    planner_wrapper.move_to_pose_with_screw(lift_pose, stage=4)
 
     # -------------------------------------------------------------------------- #
     # Stack
     # -------------------------------------------------------------------------- #
     goal_pose = env.cubeB.pose * sapien.Pose([0, 0, env.cube_half_size[2] * 2])
-    offset = (goal_pose.p - env.cubeA.pose.p).numpy()[0] # remember that all data in ManiSkill is batched and a torch tensor
+    offset = (goal_pose.p - env.cubeA.pose.p).numpy()[
+        0
+    ]  # remember that all data in ManiSkill is batched and a torch tensor
     align_pose = sapien.Pose(lift_pose.p + offset, lift_pose.q)
-    planner.move_to_pose_with_screw(align_pose)
+    planner_wrapper.move_to_pose_with_screw(align_pose, stage=5)
 
-    res = planner.open_gripper()
-    planner.close()
+    res = planner_wrapper.open_gripper(stage=6)
+    planner_wrapper.close()
     return res

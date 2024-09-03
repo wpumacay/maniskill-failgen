@@ -7,14 +7,21 @@ from mani_skill.examples.motionplanning.panda.motionplanner import (
     PandaArmMotionPlanningSolver,
 )
 from mani_skill.examples.motionplanning.panda.utils import (
-    compute_grasp_info_by_obb
+    compute_grasp_info_by_obb,
 )
 
+from failgen.fail_planner_wrapper import FailPlannerWrapper
 from failgen.tasks.fail_plug_charger import FailPlugChargerEnv
 from failgen.fail_planner_wrapper import FailPlannerWrapper
 
 
-def solve(env: FailPlugChargerEnv, seed=None, debug=False, vis=False):
+def solve(
+    env: FailPlugChargerEnv,
+    planner_wrapper: FailPlannerWrapper,
+    seed=None,
+    debug=False,
+    vis=False,
+):
     env.reset(seed=seed)
     assert env.unwrapped.control_mode in [
         "pd_joint_pos",
@@ -31,12 +38,7 @@ def solve(env: FailPlugChargerEnv, seed=None, debug=False, vis=False):
         joint_acc_limits=0.5,
     )
 
-    planner = FailPlannerWrapper(
-        planner,
-        fail_on_open=True,
-        fail_on_close=True,
-        fail_on_move=False,
-    )
+    planner_wrapper.wrap_planner(planner)
 
     FINGER_LENGTH = 0.025
     env = env.unwrapped
@@ -67,13 +69,13 @@ def solve(env: FailPlugChargerEnv, seed=None, debug=False, vis=False):
     # Reach
     # -------------------------------------------------------------------------- #
     reach_pose = grasp_pose * sapien.Pose([0, 0, -0.05])
-    planner.move_to_pose_with_screw(reach_pose)
+    planner_wrapper.move_to_pose_with_screw(reach_pose, stage=0)
 
     # -------------------------------------------------------------------------- #
     # Grasp
     # -------------------------------------------------------------------------- #
-    planner.move_to_pose_with_screw(grasp_pose)
-    planner.close_gripper()
+    planner_wrapper.move_to_pose_with_screw(grasp_pose, stage=1)
+    planner_wrapper.close_gripper(stage=2)
 
     # -------------------------------------------------------------------------- #
     # Align
@@ -84,15 +86,21 @@ def solve(env: FailPlugChargerEnv, seed=None, debug=False, vis=False):
         * env.charger.pose.sp.inv()
         * env.agent.tcp.pose.sp
     )
-    insert_pose = env.goal_pose.sp * env.charger.pose.sp.inv() * env.agent.tcp.pose.sp
-    planner.move_to_pose_with_screw(pre_insert_pose, refine_steps=0)
-    planner.move_to_pose_with_screw(pre_insert_pose, refine_steps=5)
+    insert_pose = (
+        env.goal_pose.sp * env.charger.pose.sp.inv() * env.agent.tcp.pose.sp
+    )
+    planner_wrapper.move_to_pose_with_screw(
+        pre_insert_pose, refine_steps=0, stage=3
+    )
+    planner_wrapper.move_to_pose_with_screw(
+        pre_insert_pose, refine_steps=5, stage=4
+    )
     # -------------------------------------------------------------------------- #
     # Insert
     # -------------------------------------------------------------------------- #
-    res = planner.move_to_pose_with_screw(insert_pose)
+    res = planner_wrapper.move_to_pose_with_screw(insert_pose, stage=5)
 
-    planner.close()
+    planner_wrapper.close()
     return res
 
 
