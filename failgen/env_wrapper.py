@@ -3,7 +3,6 @@ from typing import List, Tuple
 
 import gymnasium as gym
 import numpy as np
-
 from omegaconf import DictConfig, OmegaConf
 
 from failgen.fail_planner_wrapper import FailPlannerWrapper
@@ -15,6 +14,8 @@ from failgen.task_solutions.soln_plug_charger import solve as solvePlugCharger
 from failgen.task_solutions.soln_push_cube import solve as solvePushCube
 from failgen.task_solutions.soln_stack_cube import solve as solveStackCube
 from failgen.wrappers.record import RecordEpisode
+
+# from failgen.wrappers.time_limit import TimeLimit
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIGS_DIR = os.path.join(CURRENT_DIR, "configs")
@@ -61,6 +62,8 @@ class FailgenWrapper:
             sim_backend=self._config.sim_backend,
         )
 
+        # self._env = TimeLimit(self._env, 200, self.on_timelimit_done)
+
         self._env = RecordEpisode(
             self._env,
             output_dir=os.path.join(self._config.save_path, self._task_name),
@@ -73,6 +76,11 @@ class FailgenWrapper:
             ),
         )
 
+    #    def on_timelimit_done(self):
+    #        self.save_video()
+    #        self._env.reset(seed=self._seed)
+    #        self._seed += 1
+
     def get_failure(self) -> bool:
         result = self._solve_fn(
             self._env,
@@ -84,15 +92,26 @@ class FailgenWrapper:
         self._seed += 1
         if result is None:
             return True
+        elif isinstance(result, bool):
+            return result
+        elif isinstance(result, int):
+            return True
         return result[4]["success"]
 
-    def save_video(self, save: bool = True) -> None:
+    def save_video(self, save: bool = True, ep_idx: int = 0) -> None:
         self._env.flush_trajectory(save=False)
         self._env.flush_video(
             save=False, suffix=self._fail_plan_wrapper._active_fail.type
         )
         fail_type = self._fail_plan_wrapper._active_fail.type
         fail_stage = self._fail_plan_wrapper._fail_stage
+        images_save_path = os.path.join(
+            self._config.save_path,
+            self._task_name,
+            f"{ep_idx}_{fail_type}_{fail_stage}",
+        )
+        self._env.flush_multi_images(save=False, save_path=images_save_path)
+        self._env.flush_multi_images_pack(save=True, save_path=images_save_path)
         self._env.flush_video_multi(
-            save=save, suffix=f"{fail_type}_{fail_stage}"
+            save=False, suffix=f"{fail_type}_{fail_stage}"
         )

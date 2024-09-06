@@ -29,6 +29,7 @@ class Failure:
     enabled: bool
     stages: List[int]
     rnd_stage: int
+    noise: float
 
     def check_active(self, stage: int, stage_fail: str) -> bool:
         if self.enabled and stage in self.stages and stage_fail == self.type:
@@ -60,6 +61,7 @@ class FailPlannerWrapper:
                 enabled=fail_cfg.enabled,
                 stages=fail_cfg.stages.copy(),
                 rnd_stage=np.random.choice(fail_cfg.stages),
+                noise=fail_cfg.noise if "noise" in fail_cfg else 0,
             )
             if fail_cfg.enabled:
                 self._active_fail = self._failures[fail_cfg.type]
@@ -80,7 +82,7 @@ class FailPlannerWrapper:
     def set_active_stage(self, fail_stage: int) -> None:
         self._fail_stage = fail_stage
 
-    def open_gripper(self, stage: int) -> None:
+    def open_gripper(self, stage: int):
         assert self._planner is not None
         should_fail = (
             stage == self._fail_stage
@@ -88,9 +90,10 @@ class FailPlannerWrapper:
             and self._active_fail.check_active(stage, "grasp")
         )
         if not should_fail:
-            self._planner.open_gripper()
+            return self._planner.open_gripper()
+        return False
 
-    def close_gripper(self, stage: int) -> None:
+    def close_gripper(self, stage: int):
         assert self._planner is not None
         should_fail = (
             stage == self._fail_stage
@@ -98,7 +101,8 @@ class FailPlannerWrapper:
             and self._active_fail.check_active(stage, "grasp")
         )
         if not should_fail:
-            self._planner.close_gripper()
+            return self._planner.close_gripper()
+        return False
 
     def move_to_pose_with_screw(
         self,
@@ -115,7 +119,7 @@ class FailPlannerWrapper:
                 stage, "trans_x"
             ):
                 position_delta = (
-                    0.1
+                    self._active_fail.noise
                     * np.random.rand()
                     * DELTA_TRANS["trans_x"].reshape(target_pose.p.shape)
                 )
@@ -123,13 +127,13 @@ class FailPlannerWrapper:
                 stage, "trans_y"
             ):
                 position_delta = (
-                    0.1
+                    self._active_fail.noise
                     * np.random.rand()
                     * DELTA_TRANS["trans_y"].reshape(target_pose.p.shape)
                 )
             if stage == self._fail_stage and self._active_fail.check_active(stage, "trans_z"):
                 position_delta = (
-                    0.1
+                    self._active_fail.noise
                     * np.random.rand()
                     * DELTA_TRANS["trans_z"].reshape(target_pose.p.shape)
                 )
@@ -137,20 +141,20 @@ class FailPlannerWrapper:
 
             if stage == self._fail_stage and self._active_fail.check_active(stage, "rot_x"):
                 rotation_delta = (
-                    0.5
-                    * np.random.rand()
+                    self._active_fail.noise
+                    * (np.random.rand() - 0.5)
                     * DELTA_ROT["rot_x"].reshape(target_pose.rpy.shape)
                 )
             if stage == self._fail_stage and self._active_fail.check_active(stage, "rot_y"):
                 rotation_delta = (
-                    0.5
-                    * np.random.rand()
+                    self._active_fail.noise
+                    * (np.random.rand() - 0.5)
                     * DELTA_ROT["rot_y"].reshape(target_pose.rpy.shape)
                 )
             if stage == self._fail_stage and self._active_fail.check_active(stage, "rot_z"):
                 rotation_delta = (
-                    0.5
-                    * np.random.rand()
+                    self._active_fail.noise
+                    * (np.random.rand() - 0.5)
                     * DELTA_ROT["rot_z"].reshape(target_pose.rpy.shape)
                 )
             target_pose.rpy = target_pose.rpy + rotation_delta

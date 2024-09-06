@@ -1,5 +1,6 @@
 import argparse
 
+import numpy as np
 from failgen.env_wrapper import FailgenWrapper
 
 
@@ -26,7 +27,7 @@ def main() -> int:
         "--num-episodes",
         type=int,
         default=10,
-        help="The number of episodes to run this demo"
+        help="The number of episodes to run this demo",
     )
 
     args = parser.parse_args()
@@ -37,8 +38,17 @@ def main() -> int:
         save_video=args.save_video,
     )
 
+    collected = 0
     for i in range(args.num_episodes):
-        _ = fail_wrapper.get_failure()
+        stage_idx = np.random.choice(fail_wrapper._fail_plan_wrapper.stages)
+        fail_wrapper._fail_plan_wrapper.set_active_stage(stage_idx)
+        success = fail_wrapper.get_failure()
+        print(f"{i+1}/{args.num_episodes} - Success: {success}")
+        if not success:
+            fail_wrapper.save_video(save=True, ep_idx=collected)
+            collected += 1
+        else:
+            fail_wrapper.save_video(save=False)
 
     return 0
 

@@ -9,7 +9,7 @@ def run_get_failures(
     num_episodes: int,
     save_video: bool,
     headless: bool,
-    max_tries: int = 10
+    max_tries: int = 10,
 ) -> None:
     fail_wrapper = FailgenWrapper(
         task_name=task_name,
@@ -25,9 +25,9 @@ def run_get_failures(
 
     stages = fail_obj.stages
 
-    curr_tries = max_tries
     collected_episodes = 0
     for stage in stages:
+        curr_tries = max_tries
         fail_wrapper._fail_plan_wrapper.set_active_stage(stage)
         while collected_episodes <= num_episodes and curr_tries > 0:
             success = fail_wrapper.get_failure()
@@ -37,7 +37,7 @@ def run_get_failures(
             if not success:
                 curr_tries = max_tries
                 collected_episodes += 1
-                fail_wrapper.save_video(save=True)
+                fail_wrapper.save_video(save=True, ep_idx=collected_episodes)
             else:
                 fail_wrapper.save_video(save=False)
                 curr_tries -= 1
@@ -82,9 +82,6 @@ def main() -> int:
         "trans_x",
         "trans_y",
         "trans_z",
-        "rot_x",
-        "rot_y",
-        "rot_z",
     ]
 
     if args.fail_type != "":

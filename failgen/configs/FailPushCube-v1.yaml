@@ -12,15 +12,15 @@ failures:
   - type: trans_x
     enabled: false
     stages: [1, 2]
-    range: 0.1
+    range: 0.5
   - type: trans_y
     enabled: false
     stages: [1, 2]
-    range: 0.1
+    range: 0.5
   - type: trans_z
     enabled: false
     stages: [1, 2]
-    range: 0.1
+    range: 0.5
 #  - type: rot_x
 #    enabled: false
 #    stages: [1, 2]

@@ -12,24 +12,24 @@ failures:
   - type: trans_x
     enabled: false
     stages: [0, 1, 3]
-    range: 0.1
+    noise: 0.1
   - type: trans_y
     enabled: false
     stages: [0, 1, 3]
-    range: 0.1
+    noise: 0.1
   - type: trans_z
     enabled: false
     stages: [0, 1, 3]
-    range: 0.1
+    noise: 0.1
 #  - type: rot_x
 #    enabled: false
 #    stages: [0, 1, 3]
-#    range: 0.01
+#    noise: 3.14
 #  - type: rot_y
 #    enabled: false
 #    stages: [0, 1, 3]
-#    range: 0.01
+#    noise: 3.14
 #  - type: rot_z
 #    enabled: false
 #    stages: [0, 1, 3]
-#    range: 0.01
+#    noise: 3.14

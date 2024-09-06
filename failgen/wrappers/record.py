@@ -1,6 +1,8 @@
 import copy
 import time
+import os
 from dataclasses import dataclass
+from math import ceil, floor
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
 
@@ -9,6 +11,7 @@ import h5py
 import numpy as np
 import sapien.physx as physx
 import torch
+from PIL import Image
 
 from mani_skill import get_commit_info
 from mani_skill.envs.sapien_env import BaseEnv
@@ -21,6 +24,8 @@ from mani_skill.utils.visualization.misc import (
     tile_images,
 )
 from mani_skill.utils.wrappers import CPUGymWrapper
+
+from failgen.utils.image_manipulation import create_image_pack
 
 # NOTE (stao): The code for record.py is quite messy and perhaps confusing as it is trying to support both recording on CPU and GPU seamlessly
 # and handle partial resets. It works but can be claned up a lot.
@@ -768,6 +773,54 @@ class RecordEpisode(gym.Wrapper):
             )
         self._video_steps = 0
         self.render_images = []
+
+    def flush_multi_images(self, save_path: str, save: bool = True) -> None:
+        if (len(self._images_storage[0]) == 0 or
+            len(self._images_storage[1]) == 0 or
+            len(self._images_storage[2]) == 0):
+            return
+        if save:
+            images_folder = os.path.join(self.output_dir, save_path)
+            os.makedirs(images_folder, exist_ok=True)
+            for i, np_image in enumerate(self._images_storage[0]):
+                pil_image = Image.fromarray(np_image)
+                save_folder = os.path.join(images_folder, "front")
+                os.makedirs(save_folder, exist_ok=True)
+                pil_image.save(os.path.join(save_folder, f"{i}.png"))
+
+            for i, np_image in enumerate(self._images_storage[1]):
+                pil_image = Image.fromarray(np_image)
+                save_folder = os.path.join(images_folder, "side")
+                os.makedirs(save_folder, exist_ok=True)
+                pil_image.save(os.path.join(save_folder, f"{i}.png"))
+
+            for i, np_image in enumerate(self._images_storage[2]):
+                pil_image = Image.fromarray(np_image)
+                save_folder = os.path.join(images_folder, "wrist")
+                os.makedirs(save_folder, exist_ok=True)
+                pil_image.save(os.path.join(save_folder, f"{i}.png"))
+
+    def flush_multi_images_pack(self, save_path: str, save: bool = True) -> None:
+        if (len(self._images_storage[0]) == 0 or
+            len(self._images_storage[1]) == 0 or
+            len(self._images_storage[2]) == 0):
+            return
+        if save:
+            images_folder = os.path.join(self.output_dir, save_path)
+            os.makedirs(images_folder, exist_ok=True)
+            start_idx = 0
+            end_idx = len(self._images_storage[0])
+            n_groups = floor((end_idx - start_idx) / 5)
+
+            for k in range(n_groups):
+                img_pack = create_image_pack(
+                    self._images_storage[0],
+                    self._images_storage[1],
+                    self._images_storage[2],
+                    start_idx=0 + k,
+                    end_idx=len(self._images_storage[0])
+                )
+                img_pack.save(os.path.join(images_folder, f"{k}.png"))
 
     def flush_video_multi(
         self,
